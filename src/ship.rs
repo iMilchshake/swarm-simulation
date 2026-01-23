@@ -76,23 +76,23 @@ impl<'a> Ship<'a> {
             return;
         }
 
-        if dist > EPSILON {
-            // max speed we can have and still stop in time``
-            // kinetic equation v^2 = 2*a*d => v = sqrt(2*a*d)
-            let max_safe_speed = (2.0 * dist * self.config.max_decel).sqrt();
-            let max_safe_speed = max_safe_speed.min(self.config.max_speed);
+        if dist > EPSILON || speed > EPSILON {
+            let decel = self.config.max_decel;
 
-            if speed > max_safe_speed {
-                // too fast -> brake opposite to velocity
-                let brake_dir = -self.vel.normalize();
-                let decel = (brake_dir * self.config.max_decel).clamp_length_max(speed);
-                self.vel += decel;
-            } else if speed + self.config.max_accel < max_safe_speed {
-                // can accelerate toward target without exceeding safe speed
+            // max safe velocity: v² + 2*decel*v - 2*decel*d <= 0
+            // solving: v_max = -decel + sqrt(decel² + 2*decel*d)
+            let v_max = -decel + (decel * decel + 2.0 * decel * dist).sqrt();
+            let v_max = v_max.min(self.config.max_speed);
+
+            if speed > v_max {
+                // too fast -> brake (only as much as needed, up to max_decel)
+                let brake_amount = (speed - v_max).min(self.config.max_decel);
+                self.vel = self.vel.normalize() * (speed - brake_amount);
+            } else if speed < v_max {
+                // can go faster -> accelerate toward target (only as much as needed)
+                let accel_amount = (v_max - speed).min(self.config.max_accel);
                 let desired_dir = to_target.normalize();
-                self.vel += desired_dir * self.config.max_accel;
-
-                self.vel = self.vel.clamp_length_max(self.config.max_speed);
+                self.vel = desired_dir * (speed + accel_amount);
             }
         }
 
