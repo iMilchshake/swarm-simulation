@@ -1,6 +1,7 @@
 use macroquad::prelude::*;
 
 use crate::ship::Ship;
+use crate::swarm::Swarm;
 
 pub fn draw_ship(ship: &Ship) {
     let pos = ship.pos;
@@ -27,4 +28,13 @@ pub fn draw_ship(ship: &Ship) {
 
     // Draw target position
     draw_circle(ship.target_pos.x, ship.target_pos.y, 5.0, RED);
+}
+
+pub fn draw_swarm(swarm: &Swarm) {
+    for (ship, _) in &swarm.ships {
+        draw_ship(ship);
+    }
+
+    // Draw swarm target
+    draw_circle(swarm.target_pos.x, swarm.target_pos.y, 8.0, GREEN);
 }
