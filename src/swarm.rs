@@ -1,11 +1,8 @@
-use std::f32::consts::PI;
-
 use glam::Vec2;
 
-use crate::{
-    ship::{Ship, ShipConfig},
-    swarm,
-};
+use crate::ship::{Ship, ShipConfig};
+
+const GOLDEN_ANGLE: f32 = 2.399_963_23;
 
 pub struct SwarmConfig {
     /// maximum number of ships in a swarm
@@ -37,15 +34,10 @@ impl Default for SwarmConfig {
 /// the Swarms target position.
 /// The swarms own position is the average position of all ships
 pub struct Swarm<'a> {
-    /// keeps track of all ships and their **relative** position to swarm
+    /// keeps track of all ships and their **relative** position to swarm's target position
     pub ships: Vec<(Ship<'a>, Vec2)>,
-
-    center_pos: Vec2,
-
     pub target_pos: Vec2,
-
-    // x(n) = sqrt(n) cos(nφ)
-    // y(n) = sqrt(n) sin(nφ)
+    pub direction: f32,
     config: &'a SwarmConfig,
 }
 
@@ -57,26 +49,38 @@ impl<'a> Swarm<'a> {
         ship_config: &'a ShipConfig,
     ) -> Swarm<'a> {
         let mut ships = Vec::new();
-        let golden_ratio = PI * (3.0 - f32::sqrt(5.0));
 
+        // spawn ships in spiral layout using golden angle (sunflower structure)
         for ship_idx in 0..swarm_config.init_ships {
             let n = ship_idx as f32;
-            let x = f32::sqrt(n) * f32::cos(n * golden_ratio) * swarm_config.scale;
-            let y = f32::sqrt(n) * f32::sin(n * golden_ratio) * swarm_config.scale;
+            let x = f32::sqrt(n) * f32::cos(n * GOLDEN_ANGLE) * swarm_config.scale;
+            let y = f32::sqrt(n) * f32::sin(n * GOLDEN_ANGLE) * swarm_config.scale;
             let ship = Ship::spawn(Vec2::new(x, y), ship_config);
-
             ships.push((ship, Vec2::new(x, y)));
         }
 
         Swarm {
-            ships: ships,
-            center_pos: pos,
+            ships,
             target_pos: pos,
+            direction: 0.0,
             config: swarm_config,
         }
     }
 
     pub fn set_target(&mut self, pos: Vec2) {
+        let center: Vec2 =
+            self.ships.iter().map(|(s, _)| s.pos).sum::<Vec2>() / self.ships.len() as f32;
+        let to_target = pos - center;
+
+        // rotate all relative positions
+        let new_direction = to_target.y.atan2(to_target.x);
+        let rotation = Vec2::from_angle(new_direction - self.direction);
+        for (_, relative_pos) in &mut self.ships {
+            *relative_pos = relative_pos.rotate(rotation);
+        }
+        self.direction = new_direction;
+
+        // update ship global target positions
         self.target_pos = pos;
         for (ship, relative_pos) in &mut self.ships {
             ship.set_target(pos + *relative_pos);
@@ -97,7 +101,5 @@ impl<'a> Swarm<'a> {
 
     pub fn finalize(&mut self) {
         self.ships.retain(|(ship, _)| ship.health > 0);
-
-        // TODO: update swarm position
     }
 }
