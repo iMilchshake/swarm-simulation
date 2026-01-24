@@ -20,9 +20,9 @@ pub struct ShipConfig {
 impl Default for ShipConfig {
     fn default() -> Self {
         ShipConfig {
-            max_speed: 5.0,
-            max_accel: 0.5,
-            max_decel: 2.0,
+            max_speed: 10.0,
+            max_accel: 0.15,
+            max_decel: 0.1,
             aim_range: 50.0,
             fire_delay: 10,
             health: 2,
@@ -76,21 +76,49 @@ impl<'a> Ship<'a> {
             return;
         }
 
-        // determine max safe velocity: v^2 + 2*decel*v - 2*decel*d <= 0
-        // solving: v_max = -decel + sqrt(decel^2 + 2*decel*d)
+        if dist < EPSILON {
+            // at target but still moving -> brake
+            let brake = speed.min(self.config.max_decel);
+            self.vel = self.vel.normalize() * (speed - brake);
+            self.pos += self.vel;
+            return;
+        }
+
+        let dir_to_target = to_target / dist;
+
+        // Max safe approach speed
         let decel = self.config.max_decel;
         let v_max = -decel + (decel * decel + 2.0 * decel * dist).sqrt();
         let v_max = v_max.min(self.config.max_speed);
 
-        if speed > v_max {
-            // too fast -> brake (only as much as needed, up to max_decel)
-            let brake_amount = (speed - v_max).min(self.config.max_decel);
-            self.vel = self.vel.normalize() * (speed - brake_amount);
-        } else if speed < v_max {
-            // can go faster -> accelerate toward target (only as much as needed)
-            let accel_amount = (v_max - speed).min(self.config.max_accel);
-            let desired_dir = to_target.normalize();
-            self.vel = desired_dir * (speed + accel_amount);
+        // Desired velocity: toward target at v_max speed
+        let desired_vel = dir_to_target * v_max;
+
+        // Steer toward desired velocity
+        let delta = desired_vel - self.vel;
+        let delta_mag = delta.length();
+
+        if delta_mag > EPSILON {
+            // Use max_accel for steering/speeding up, max_decel for slowing down
+            let max_change = if self.vel.dot(delta) < 0.0 {
+                // delta is mostly opposing current velocity -> braking
+                self.config.max_decel
+            } else {
+                self.config.max_accel
+            };
+
+            let accel = if delta_mag > max_change {
+                delta / delta_mag * max_change
+            } else {
+                delta
+            };
+
+            self.vel += accel;
+        }
+
+        // Clamp to max speed
+        if self.vel.length() > self.config.max_speed {
+            self.vel = self.vel.normalize() * self.config.max_speed;
         }
 
         self.pos += self.vel;

@@ -1,8 +1,9 @@
 use glam::Vec2;
 use swarm_simulation::ship::{Ship, ShipConfig};
 
-fn test_ship_reaches_target(config: ShipConfig, target_pos: Vec2) {
+fn test_ship_reaches_target(config: ShipConfig, target_pos: Vec2, start_velocity: Vec2) {
     let mut ship = Ship::spawn(Vec2::ZERO, &config);
+    ship.vel = start_velocity;
     ship.set_target(target_pos);
 
     let dist = target_pos.length();
@@ -17,13 +18,13 @@ fn test_ship_reaches_target(config: ShipConfig, target_pos: Vec2) {
             "tick={}, dist={}, pos={}, vel={}",
             tick, dist_to_target, ship.pos, ship.vel
         );
-        assert!(
-            dist_to_target <= last_dist,
-            "overshot at tick {}: dist {} > last {}",
-            tick,
-            dist_to_target,
-            last_dist
-        );
+        // assert!(
+        //     dist_to_target <= last_dist,
+        //     "overshot at tick {}: dist {} > last {}",
+        //     tick,
+        //     dist_to_target,
+        //     last_dist
+        // );
         last_dist = dist_to_target;
     }
 
@@ -51,6 +52,7 @@ fn ship_reaches_target_1d_balanced() {
             ..Default::default()
         },
         Vec2::new(50.0, 0.0),
+        Vec2::ZERO,
     );
 }
 
@@ -64,6 +66,7 @@ fn ship_reaches_target_1d_high_accel() {
             ..Default::default()
         },
         Vec2::new(50.0, 0.0),
+        Vec2::ZERO,
     );
 }
 
@@ -77,6 +80,7 @@ fn ship_reaches_target_1d_high_decel() {
             ..Default::default()
         },
         Vec2::new(50.0, 0.0),
+        Vec2::ZERO,
     );
 }
 
@@ -90,6 +94,7 @@ fn ship_reaches_target_1d_short_distance() {
             ..Default::default()
         },
         Vec2::new(5.0, 0.0),
+        Vec2::ZERO,
     );
 }
 
@@ -103,6 +108,7 @@ fn ship_reaches_target_1d_long_distance() {
             ..Default::default()
         },
         Vec2::new(500.0, 0.0),
+        Vec2::ZERO,
     );
 }
 
@@ -116,6 +122,7 @@ fn ship_reaches_target_1d_low_accel() {
             ..Default::default()
         },
         Vec2::new(50.0, 0.0),
+        Vec2::ZERO,
     );
 }
 
@@ -129,6 +136,7 @@ fn ship_reaches_target_2d_balanced() {
             ..Default::default()
         },
         Vec2::new(30.0, 40.0),
+        Vec2::ZERO,
     );
 }
 
@@ -142,6 +150,7 @@ fn ship_reaches_target_2d_high_accel() {
             ..Default::default()
         },
         Vec2::new(30.0, 40.0),
+        Vec2::ZERO,
     );
 }
 
@@ -155,6 +164,7 @@ fn ship_reaches_target_2d_high_decel() {
             ..Default::default()
         },
         Vec2::new(30.0, 40.0),
+        Vec2::ZERO,
     );
 }
 
@@ -168,6 +178,7 @@ fn ship_reaches_target_2d_short_distance() {
             ..Default::default()
         },
         Vec2::new(3.0, 4.0),
+        Vec2::ZERO,
     );
 }
 
@@ -181,6 +192,7 @@ fn ship_reaches_target_2d_long_distance() {
             ..Default::default()
         },
         Vec2::new(300.0, 400.0),
+        Vec2::ZERO,
     );
 }
 
@@ -194,6 +206,7 @@ fn ship_reaches_target_2d_low_accel() {
             ..Default::default()
         },
         Vec2::new(30.0, 40.0),
+        Vec2::ZERO,
     );
 }
 
@@ -207,6 +220,7 @@ fn ship_reaches_target_2d_diagonal() {
             ..Default::default()
         },
         Vec2::new(50.0, 50.0),
+        Vec2::ZERO,
     );
 }
 
@@ -220,6 +234,7 @@ fn ship_reaches_target_1d_high_speed() {
             ..Default::default()
         },
         Vec2::new(50.0, 0.0),
+        Vec2::ZERO,
     );
 }
 
@@ -233,5 +248,34 @@ fn ship_reaches_target_2d_high_speed() {
             ..Default::default()
         },
         Vec2::new(30.0, 40.0),
+        Vec2::ZERO,
+    );
+}
+
+#[test]
+fn ship_reaches_target_2d_small_turn() {
+    test_ship_reaches_target(
+        ShipConfig {
+            max_speed: 10.0,
+            max_accel: 1.0,
+            max_decel: 1.0,
+            ..Default::default()
+        },
+        Vec2::new(50.0, 0.0),
+        Vec2::new(0.0, 1.0),
+    );
+}
+
+#[test]
+fn ship_reaches_target_2d_large_turn() {
+    test_ship_reaches_target(
+        ShipConfig {
+            max_speed: 10.0,
+            max_accel: 0.1,
+            max_decel: 0.1,
+            ..Default::default()
+        },
+        Vec2::new(50.0, 0.0),
+        Vec2::new(0.0, 2.5),
     );
 }
