@@ -21,7 +21,7 @@ async fn main() {
 
         // Render
         clear_background(WHITE);
-        draw_ship(&ship);
+        draw_ship(&ship, BLUE);
 
         next_frame().await;
     }

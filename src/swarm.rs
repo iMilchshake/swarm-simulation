@@ -38,6 +38,7 @@ pub struct Swarm<'a> {
     pub ships: Vec<(Ship<'a>, Vec2)>,
     pub target_pos: Vec2,
     pub direction: f32,
+    pub center: Vec2,
     config: &'a SwarmConfig,
 }
 
@@ -62,15 +63,14 @@ impl<'a> Swarm<'a> {
         Swarm {
             ships,
             target_pos: pos,
+            center: pos,
             direction: 0.0,
             config: swarm_config,
         }
     }
 
     pub fn set_target(&mut self, pos: Vec2) {
-        let center: Vec2 =
-            self.ships.iter().map(|(s, _)| s.pos).sum::<Vec2>() / self.ships.len() as f32;
-        let to_target = pos - center;
+        let to_target = pos - self.center;
 
         // rotate all relative positions
         let new_direction = to_target.y.atan2(to_target.x);
@@ -101,5 +101,6 @@ impl<'a> Swarm<'a> {
 
     pub fn finalize(&mut self) {
         self.ships.retain(|(ship, _)| ship.health > 0);
+        self.center = self.ships.iter().map(|(s, _)| s.pos).sum::<Vec2>() / self.ships.len() as f32;
     }
 }

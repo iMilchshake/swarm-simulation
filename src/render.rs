@@ -3,7 +3,7 @@ use macroquad::prelude::*;
 use crate::ship::Ship;
 use crate::swarm::Swarm;
 
-pub fn draw_ship(ship: &Ship) {
+pub fn draw_ship(ship: &Ship, color: Color) {
     let pos = ship.pos;
     let vel = ship.vel;
 
@@ -23,18 +23,30 @@ pub fn draw_ship(ship: &Ship) {
         vec2(pos.x + front.x, pos.y + front.y),
         vec2(pos.x + back_left.x, pos.y + back_left.y),
         vec2(pos.x + back_right.x, pos.y + back_right.y),
-        BLUE,
+        color,
     );
-
-    // Draw target position
-    draw_circle(ship.target_pos.x, ship.target_pos.y, 5.0, RED);
 }
 
-pub fn draw_swarm(swarm: &Swarm) {
+pub fn draw_swarm(swarm: &Swarm<'_>, color: Color) {
     for (ship, _) in &swarm.ships {
-        draw_ship(ship);
+        draw_ship(ship, color);
     }
 
-    // Draw swarm target
-    draw_circle(swarm.target_pos.x, swarm.target_pos.y, 8.0, GREEN);
+    draw_circle(
+        swarm.target_pos.x,
+        swarm.target_pos.y,
+        3.0,
+        color.with_alpha(0.5),
+    );
+
+    draw_circle(swarm.center.x, swarm.center.y, 8.0, color.with_alpha(1.0));
+
+    draw_line(
+        swarm.center.x,
+        swarm.center.y,
+        swarm.target_pos.x,
+        swarm.target_pos.y,
+        1.0,
+        color.with_alpha(0.5),
+    );
 }

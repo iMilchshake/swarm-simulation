@@ -21,7 +21,7 @@ async fn main() {
         swarm.movement();
 
         clear_background(WHITE);
-        draw_swarm(&swarm);
+        draw_swarm(&swarm, BLUE);
 
         next_frame().await;
     }
