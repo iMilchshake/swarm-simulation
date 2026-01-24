@@ -13,7 +13,10 @@ fn test_ship_reaches_target(config: ShipConfig, target_pos: Vec2) {
         ship.movement();
 
         let dist_to_target = (ship.pos - ship.target_pos).length();
-        eprintln!("tick={}, dist={}", tick, dist_to_target);
+        eprintln!(
+            "tick={}, dist={}, pos={}, vel={}",
+            tick, dist_to_target, ship.pos, ship.vel
+        );
         assert!(
             dist_to_target <= last_dist,
             "overshot at tick {}: dist {} > last {}",

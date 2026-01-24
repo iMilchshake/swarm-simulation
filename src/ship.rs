@@ -61,7 +61,7 @@ impl<'a> Ship<'a> {
     /// TODO: right now ships just accelerate in the direction of target,
     /// or break by decelerating in the opposite direction of velocity
     /// this is not optimal and could lead to ships not reaching their
-    /// destination -> gotta investiage :)
+    /// destination optimally -> gotta investiage :)
     /// A smarter solution would allow to determine a smart acceleration
     /// vector that leads to the optimal / shortest path to the target
     pub fn movement(&mut self) {
@@ -69,31 +69,28 @@ impl<'a> Ship<'a> {
         let dist = to_target.length();
         let speed = self.vel.length();
 
-        // close enough and slow enough -> stop
-        if dist < 0.1 && speed < 0.1 {
+        // close and slow enough -> full stop
+        if dist < EPSILON && speed < EPSILON {
             self.vel = Vec2::ZERO;
-            self.pos += self.vel;
+            self.pos = self.target_pos;
             return;
         }
 
-        if dist > EPSILON || speed > EPSILON {
-            let decel = self.config.max_decel;
+        // determine max safe velocity: v^2 + 2*decel*v - 2*decel*d <= 0
+        // solving: v_max = -decel + sqrt(decel^2 + 2*decel*d)
+        let decel = self.config.max_decel;
+        let v_max = -decel + (decel * decel + 2.0 * decel * dist).sqrt();
+        let v_max = v_max.min(self.config.max_speed);
 
-            // max safe velocity: v² + 2*decel*v - 2*decel*d <= 0
-            // solving: v_max = -decel + sqrt(decel² + 2*decel*d)
-            let v_max = -decel + (decel * decel + 2.0 * decel * dist).sqrt();
-            let v_max = v_max.min(self.config.max_speed);
-
-            if speed > v_max {
-                // too fast -> brake (only as much as needed, up to max_decel)
-                let brake_amount = (speed - v_max).min(self.config.max_decel);
-                self.vel = self.vel.normalize() * (speed - brake_amount);
-            } else if speed < v_max {
-                // can go faster -> accelerate toward target (only as much as needed)
-                let accel_amount = (v_max - speed).min(self.config.max_accel);
-                let desired_dir = to_target.normalize();
-                self.vel = desired_dir * (speed + accel_amount);
-            }
+        if speed > v_max {
+            // too fast -> brake (only as much as needed, up to max_decel)
+            let brake_amount = (speed - v_max).min(self.config.max_decel);
+            self.vel = self.vel.normalize() * (speed - brake_amount);
+        } else if speed < v_max {
+            // can go faster -> accelerate toward target (only as much as needed)
+            let accel_amount = (v_max - speed).min(self.config.max_accel);
+            let desired_dir = to_target.normalize();
+            self.vel = desired_dir * (speed + accel_amount);
         }
 
         self.pos += self.vel;
