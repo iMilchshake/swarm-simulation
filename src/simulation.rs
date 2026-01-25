@@ -37,6 +37,27 @@ impl Bounds {
     pub fn clamp(&self, pos: Vec2) -> Vec2 {
         pos.clamp(self.min, self.max)
     }
+
+    pub fn nearest_bound_edge(&self, pos: Vec2) -> Vec2 {
+        let left = pos.x - self.min.x;
+        let top = pos.y - self.min.y;
+        let right = self.max.x - pos.x;
+        let bot = self.max.y - pos.y;
+
+        let min_dist = left.min(top).min(right).min(bot);
+
+        if left == min_dist {
+            Vec2::new(0.0, pos.y)
+        } else if top == min_dist {
+            Vec2::new(pos.x, 0.0)
+        } else if right == min_dist {
+            Vec2::new(self.max.x, pos.y)
+        } else if bot == min_dist {
+            Vec2::new(pos.x, self.max.y)
+        } else {
+            unreachable!()
+        }
+    }
 }
 
 pub struct Simulation {

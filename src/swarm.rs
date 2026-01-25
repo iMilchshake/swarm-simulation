@@ -135,7 +135,18 @@ impl Swarm {
         target.map(|t| {
             let final_target = if is_threat {
                 let flee_dir = (self.center - t).normalize_or_zero();
-                bounds.clamp(self.center + flee_dir * 200.0)
+
+                let bounds_pos = bounds.nearest_bound_edge(self.center);
+
+                let bounds_evade_dir = if bounds_pos.distance(self.center) < 100.0 {
+                    self.center - bounds_pos
+                } else {
+                    Vec2::ZERO
+                };
+
+                let flee_vec = self.center
+                    + (0.8 * flee_dir + 0.2 * bounds_evade_dir).normalize_or_zero() * 300.0;
+                bounds.clamp(flee_vec)
             } else {
                 t
             };
