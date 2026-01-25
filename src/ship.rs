@@ -1,7 +1,9 @@
 use glam::Vec2;
+use std::rc::Rc;
 
 const EPSILON: f32 = 0.001;
 
+#[derive(Clone)]
 pub struct ShipConfig {
     /// maximum ship velocity magnitude
     pub max_speed: f32,
@@ -31,16 +33,16 @@ impl Default for ShipConfig {
 }
 
 /// A single unit. Controlled by a swarm, but works independent.
-pub struct Ship<'a> {
+pub struct Ship {
     pub pos: Vec2,
     pub vel: Vec2,
     pub target_pos: Vec2,
     pub health: u32,
-    config: &'a ShipConfig,
+    config: Rc<ShipConfig>,
 }
 
-impl<'a> Ship<'a> {
-    pub fn spawn(pos: Vec2, config: &'a ShipConfig) -> Ship<'a> {
+impl Ship {
+    pub fn spawn(pos: Vec2, config: Rc<ShipConfig>) -> Ship {
         Ship {
             pos,
             vel: Vec2::ZERO,
@@ -55,7 +57,7 @@ impl<'a> Ship<'a> {
     }
 
     pub fn fight(&mut self) {
-        todo!();
+        // todo!();
     }
 
     /// TODO: right now ships just accelerate in the direction of target,

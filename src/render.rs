@@ -27,7 +27,7 @@ pub fn draw_ship(ship: &Ship, color: Color) {
     );
 }
 
-pub fn draw_swarm(swarm: &Swarm<'_>, color: Color) {
+pub fn draw_swarm(swarm: &Swarm, color: Color) {
     for (ship, _) in &swarm.ships {
         draw_ship(ship, color);
     }
@@ -36,6 +36,14 @@ pub fn draw_swarm(swarm: &Swarm<'_>, color: Color) {
         swarm.target_pos.x,
         swarm.target_pos.y,
         3.0,
+        color.with_alpha(0.5),
+    );
+
+    draw_circle_lines(
+        swarm.center.x,
+        swarm.center.y,
+        swarm.config.vision_range,
+        0.5,
         color.with_alpha(0.5),
     );
 

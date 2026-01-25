@@ -1,8 +1,10 @@
 use glam::Vec2;
+use std::rc::Rc;
 use swarm_simulation::ship::{Ship, ShipConfig};
 
 fn test_ship_reaches_target(config: ShipConfig, target_pos: Vec2, start_velocity: Vec2) {
-    let mut ship = Ship::spawn(Vec2::ZERO, &config);
+    let config = Rc::new(config);
+    let mut ship = Ship::spawn(Vec2::ZERO, config);
     ship.vel = start_velocity;
     ship.set_target(target_pos);
 
