@@ -4,7 +4,7 @@ use swarm_simulation::render::draw_swarm;
 use swarm_simulation::ship::ShipConfig;
 use swarm_simulation::swarm::{Swarm, SwarmConfig};
 
-const NUM_SWARMS: usize = 15;
+const NUM_SWARMS: usize = 5;
 
 fn generate_colors() -> [Color; NUM_SWARMS] {
     std::array::from_fn(|_| {
@@ -63,6 +63,9 @@ async fn main() {
         });
     }
 
+    let mut tunnel_chaser = Swarm::spawn(random_pos(), &swarm_config, &ship_config);
+    let mut nearest_chaser = Swarm::spawn(random_pos(), &swarm_config, &ship_config);
+
     loop {
         // Update swarms and check progress
         for state in &mut swarms {
@@ -74,11 +77,31 @@ async fn main() {
             }
         }
 
+        tunnel_chaser.set_target(swarms[0].swarm.center);
+        tunnel_chaser.movement();
+        tunnel_chaser.finalize();
+
+        let mut min_dist = f32::MAX;
+        let mut nearest_target = nearest_chaser.center;
+        for state in &mut swarms {
+            let dist = state.swarm.center.distance_squared(nearest_chaser.center);
+            if dist < min_dist {
+                nearest_target = state.swarm.center;
+                min_dist = dist;
+            }
+        }
+        nearest_chaser.set_target(nearest_target);
+        nearest_chaser.movement();
+        nearest_chaser.finalize();
+
         // Render
         clear_background(WHITE);
         for (i, state) in swarms.iter().enumerate() {
             draw_swarm(&state.swarm, swarm_colors[i]);
         }
+
+        draw_swarm(&tunnel_chaser, RED);
+        draw_swarm(&nearest_chaser, RED);
 
         next_frame().await;
     }
