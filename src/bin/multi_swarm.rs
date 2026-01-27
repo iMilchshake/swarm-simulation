@@ -3,7 +3,7 @@ use macroquad::prelude::*;
 use swarm_simulation::render::draw_swarm;
 use swarm_simulation::simulation::{Bounds, Simulation, SimulationConfig};
 
-const NUM_SWARMS: usize = 2;
+const NUM_SWARMS: usize = 5;
 
 fn generate_colors(n: usize) -> Vec<Color> {
     (0..n)
