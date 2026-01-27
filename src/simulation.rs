@@ -38,25 +38,35 @@ impl Bounds {
         pos.clamp(self.min, self.max)
     }
 
-    pub fn nearest_bound_edge(&self, pos: Vec2) -> Vec2 {
-        let left = pos.x - self.min.x;
-        let top = pos.y - self.min.y;
-        let right = self.max.x - pos.x;
-        let bot = self.max.y - pos.y;
+    pub fn clamp_with_margin(&self, pos: Vec2, margin: f32) -> Vec2 {
+        pos.clamp(self.min + Vec2::splat(margin), self.max - Vec2::splat(margin))
+    }
 
-        let min_dist = left.min(top).min(right).min(bot);
+    /// Returns a vector pointing away from nearby walls, with strength based on proximity.
+    /// Handles corners by combining repulsion from multiple walls.
+    pub fn wall_avoidance(&self, pos: Vec2, detect_range: f32) -> Vec2 {
+        let left_dist = pos.x - self.min.x;
+        let top_dist = pos.y - self.min.y;
+        let right_dist = self.max.x - pos.x;
+        let bot_dist = self.max.y - pos.y;
 
-        if left == min_dist {
-            Vec2::new(0.0, pos.y)
-        } else if top == min_dist {
-            Vec2::new(pos.x, 0.0)
-        } else if right == min_dist {
-            Vec2::new(self.max.x, pos.y)
-        } else if bot == min_dist {
-            Vec2::new(pos.x, self.max.y)
-        } else {
-            unreachable!()
+        let mut avoidance = Vec2::ZERO;
+
+        // Add repulsion from each wall based on proximity
+        if left_dist < detect_range {
+            avoidance.x += 1.0 - (left_dist / detect_range);
         }
+        if right_dist < detect_range {
+            avoidance.x -= 1.0 - (right_dist / detect_range);
+        }
+        if top_dist < detect_range {
+            avoidance.y += 1.0 - (top_dist / detect_range);
+        }
+        if bot_dist < detect_range {
+            avoidance.y -= 1.0 - (bot_dist / detect_range);
+        }
+
+        avoidance
     }
 }
 

@@ -23,7 +23,7 @@ impl Default for SwarmConfig {
         SwarmConfig {
             max_ships: 30,
             scale: 10.0,
-            vision_range: 400.0,
+            vision_range: 300.0,
         }
     }
 }
@@ -134,19 +134,43 @@ impl Swarm {
 
         target.map(|t| {
             let final_target = if is_threat {
+                const WALL_MARGIN: f32 = 5.0;
+                const FLEE_DISTANCE: f32 = 400.0;
+                const WALL_HIT_THRESHOLD: f32 = 0.5;
+                const FLEE_WEIGHT: f32 = 0.5;
+                const SLIDE_WEIGHT: f32 = 0.5;
+
                 let flee_dir = (self.center - t).normalize_or_zero();
+                let naive_target = self.center + flee_dir * FLEE_DISTANCE;
+                let clamped_target = bounds.clamp_with_margin(naive_target, WALL_MARGIN);
 
-                let bounds_pos = bounds.nearest_bound_edge(self.center);
+                // Check if we'd hit a wall (clamped target is much closer than intended)
+                let actual_dist = clamped_target.distance(self.center);
 
-                let bounds_evade_dir = if bounds_pos.distance(self.center) < 100.0 {
-                    self.center - bounds_pos
+                if actual_dist < FLEE_DISTANCE * WALL_HIT_THRESHOLD {
+                    // We'd hit a wall - steer to slide along it
+                    // Find perpendicular directions to flee_dir
+                    let perp1 = Vec2::new(-flee_dir.y, flee_dir.x);
+                    let perp2 = Vec2::new(flee_dir.y, -flee_dir.x);
+
+                    // Try both perpendicular directions, pick the one that gives more distance
+                    let target1 =
+                        bounds.clamp_with_margin(self.center + perp1 * FLEE_DISTANCE, WALL_MARGIN);
+                    let target2 =
+                        bounds.clamp_with_margin(self.center + perp2 * FLEE_DISTANCE, WALL_MARGIN);
+
+                    let dist1 = target1.distance(self.center);
+                    let dist2 = target2.distance(self.center);
+
+                    // Blend: mostly perpendicular (slide along wall) with some flee component
+                    let best_perp = if dist1 > dist2 { perp1 } else { perp2 };
+                    let blended_dir =
+                        (flee_dir * FLEE_WEIGHT + best_perp * SLIDE_WEIGHT).normalize_or_zero();
+
+                    bounds.clamp_with_margin(self.center + blended_dir * FLEE_DISTANCE, WALL_MARGIN)
                 } else {
-                    Vec2::ZERO
-                };
-
-                let flee_vec = self.center
-                    + (0.8 * flee_dir + 0.2 * bounds_evade_dir).normalize_or_zero() * 300.0;
-                bounds.clamp(flee_vec)
+                    clamped_target
+                }
             } else {
                 t
             };
