@@ -5,7 +5,7 @@ use crate::repulsion::RepulsionMap;
 use crate::ship::{Ship, ShipConfig};
 use crate::simulation::Simulation;
 
-const GOLDEN_ANGLE: f32 = 2.399_963_23;
+const GOLDEN_ANGLE: f32 = 2.399_963_1;
 
 #[derive(Clone)]
 pub struct SwarmConfig {
@@ -134,6 +134,7 @@ impl Swarm {
         const FLEE_DISTANCE: f32 = 400.0;
         const WALL_MARGIN: f32 = 50.0;
         const VELOCITY_PENALTY_STRENGTH: f32 = 0.3;
+        const PREY_SIZE_DIFFERENCE: u32 = 5; // must be this much smaller to be considered prey
 
         let nearby_swarms = sim.get_swarms_in_range(self_idx);
         let bounds = sim.bounds();
@@ -143,7 +144,7 @@ impl Swarm {
         let mut has_threat = false;
 
         for (swarm, _dist) in &nearby_swarms {
-            if swarm.num_ships() >= self.num_ships() {
+            if swarm.num_ships() + PREY_SIZE_DIFFERENCE >= self.num_ships() {
                 has_threat = true;
             } else if chase_target.is_none() {
                 chase_target = Some(swarm.center);
@@ -170,25 +171,27 @@ impl Swarm {
             repulsion.add_wall_repulsion(self.center, bounds, WALL_DETECT_RANGE, WALL_SIGMA);
 
             // Add velocity penalty (penalize sharp turns)
-            repulsion.add_velocity_penalty(self.velocity, VELOCITY_PENALTY_STRENGTH, VELOCITY_SIGMA);
+            repulsion.add_velocity_penalty(
+                self.velocity,
+                VELOCITY_PENALTY_STRENGTH,
+                VELOCITY_SIGMA,
+            );
 
             // Get best escape angle
             let best_angle = repulsion.best_angle();
             let flee_dir = Vec2::from_angle(best_angle);
-            let target = bounds.clamp_with_margin(self.center + flee_dir * FLEE_DISTANCE, WALL_MARGIN);
+            let target =
+                bounds.clamp_with_margin(self.center + flee_dir * FLEE_DISTANCE, WALL_MARGIN);
 
             Some(SwarmDecision {
                 target,
                 is_threat: true,
             })
-        } else if let Some(target) = chase_target {
-            // Chase mode: move toward weaker swarm
-            Some(SwarmDecision {
+        } else {
+            chase_target.map(|target| SwarmDecision {
                 target,
                 is_threat: false,
             })
-        } else {
-            None
         }
     }
 
