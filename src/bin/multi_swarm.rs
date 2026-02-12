@@ -1,3 +1,4 @@
+use macroquad::miniquad::conf::Platform;
 use macroquad::prelude::*;
 
 use macroquad_viewplane_camera::ViewplaneCamera;
@@ -7,6 +8,19 @@ use swarm_simulation::simulation::{Bounds, Simulation, SimulationConfig};
 
 const NUM_SWARMS: usize = 25;
 const MAP_SCALE: f32 = 2.0;
+
+const SIM_FRAME_TIME: f64 = 1. / 60.;
+
+fn window_conf() -> Conf {
+    Conf {
+        window_title: "Multi Swarm".to_owned(),
+        platform: Platform {
+            swap_interval: Some(1), // -1 = adaptive vsync
+            ..Default::default()
+        },
+        ..Default::default()
+    }
+}
 
 fn generate_colors(n: usize) -> Vec<Color> {
     (0..n)
@@ -28,7 +42,7 @@ fn random_pos(bounds: &Bounds) -> Vec2 {
     )
 }
 
-#[macroquad::main("Multi Swarm")]
+#[macroquad::main(window_conf)]
 async fn main() {
     let map_width = screen_width() * MAP_SCALE;
     let map_height = screen_height() * MAP_SCALE;
@@ -43,11 +57,18 @@ async fn main() {
         sim.spawn_swarm(random_pos(sim.bounds()), num_ships);
     }
 
+    let mut sim_time_lag = 0.0;
+
     loop {
         camera.set_viewport(0, 0, screen_width() as i32, screen_height() as i32);
         camera.handle_inputs();
 
-        sim.step();
+        // run simulation steps needed to catch up, but dont exceed target simulation speed
+        sim_time_lag += get_frame_time() as f64;
+        while sim_time_lag >= SIM_FRAME_TIME {
+            sim.step();
+            sim_time_lag -= SIM_FRAME_TIME;
+        }
 
         clear_background(WHITE);
         camera.apply();
@@ -68,6 +89,7 @@ async fn main() {
         }
 
         camera.reset_camera();
+
         next_frame().await;
     }
 }
