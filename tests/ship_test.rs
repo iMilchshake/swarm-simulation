@@ -33,8 +33,7 @@ fn test_ship_reaches_target(config: ShipConfig, target_pos: Vec2, start_velocity
     let dist_to_target = (ship.pos - ship.target_pos).length();
     assert!(
         dist_to_target < 0.001,
-        "failed to reach target: dist={}",
-        dist_to_target
+        "failed to reach target: dist={dist_to_target}"
     );
     assert!(
         ship.vel.length() < 0.001,

@@ -39,7 +39,10 @@ impl Bounds {
     }
 
     pub fn clamp_with_margin(&self, pos: Vec2, margin: f32) -> Vec2 {
-        pos.clamp(self.min + Vec2::splat(margin), self.max - Vec2::splat(margin))
+        pos.clamp(
+            self.min + Vec2::splat(margin),
+            self.max - Vec2::splat(margin),
+        )
     }
 
     /// Returns a vector pointing away from nearby walls, with strength based on proximity.
@@ -142,8 +145,6 @@ impl Simulation {
         let decisions: Vec<Option<SwarmDecision>> = (0..self.swarms.len())
             .map(|idx| self.swarms[idx].decide(self, idx))
             .collect();
-
-        dbg!(&decisions);
 
         // Phase 2: Apply decisions
         for (swarm, decision) in self.swarms.iter_mut().zip(decisions) {

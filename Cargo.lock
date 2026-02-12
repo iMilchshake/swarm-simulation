@@ -181,6 +181,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "macroquad-viewplane-camera"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c41da10e49ac2e106368431266b089e6d23671efea40262a8fa906980abc1e9f"
+dependencies = [
+ "macroquad",
+]
+
+[[package]]
 name = "macroquad_macro"
 version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -356,6 +365,7 @@ dependencies = [
  "getrandom",
  "glam",
  "macroquad",
+ "macroquad-viewplane-camera",
  "rand",
  "rand_xoshiro",
 ]
