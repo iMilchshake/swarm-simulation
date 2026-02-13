@@ -1,7 +1,7 @@
 use glam::Vec2;
 use std::rc::Rc;
 
-use crate::ship::ShipConfig;
+use crate::ship::{ShipConfig, ShipId};
 use crate::swarm::{Swarm, SwarmConfig, SwarmDecision};
 
 pub struct SimulationConfig {
@@ -153,13 +153,42 @@ impl Simulation {
             }
         }
 
-        // Phase 3: Simulate Physics
+        // Phase 3: Movement
         for swarm in &mut self.swarms {
             swarm.movement();
         }
-        for swarm in &mut self.swarms {
-            swarm.fight();
+
+        // Phase 4: Combat — each swarm fights nearby enemy ships
+        let mut all_hits: Vec<ShipId> = Vec::new();
+
+        for swarm_idx in 0..self.swarms.len() {
+            let (before, rest) = self.swarms.split_at_mut(swarm_idx);
+            let (swarm, after) = rest.split_first_mut().unwrap();
+
+            let enemies: Vec<&crate::ship::Ship> = before.iter()
+                .chain(after.iter())
+                .filter(|other| {
+                    other.center.distance(swarm.center) <= swarm.config.vision_range
+                })
+                .flat_map(|s| s.ships.iter().map(|(ship, _)| ship))
+                .collect();
+
+            let hits = swarm.fight(&enemies);
+            all_hits.extend(hits);
         }
+
+        // apply damage
+        for hit_id in &all_hits {
+            for swarm in &mut self.swarms {
+                for (ship, _) in &mut swarm.ships {
+                    if ship.id == *hit_id {
+                        ship.health = ship.health.saturating_sub(1);
+                    }
+                }
+            }
+        }
+
+        // Phase 5: Finalize
         for swarm in &mut self.swarms {
             swarm.finalize();
         }

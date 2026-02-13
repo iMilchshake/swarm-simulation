@@ -1,8 +1,10 @@
+use std::collections::HashMap;
+
 use glam::Vec2;
 use std::rc::Rc;
 
 use crate::repulsion::RepulsionMap;
-use crate::ship::{Ship, ShipConfig};
+use crate::ship::{Ship, ShipConfig, ShipId};
 use crate::simulation::Simulation;
 
 const GOLDEN_ANGLE: f32 = 2.399_963_1;
@@ -102,10 +104,85 @@ impl Swarm {
         }
     }
 
-    pub fn fight(&mut self) {
-        for (ship, _) in &mut self.ships {
-            ship.fight();
+    /// Each ship locks onto the nearest enemy in aim_range, fires after a
+    /// delay that scales with enemy speed. Returns IDs of enemies that were hit.
+    pub fn fight(&mut self, enemies: &[&Ship]) -> Vec<ShipId> {
+        let mut hits: Vec<ShipId> = Vec::new();
+
+        // count how many of our ships already target each enemy
+        let mut targeted_count: HashMap<ShipId, u32> = HashMap::new();
+        for (ship, _) in self.ships.iter() {
+            if let Some(target_id) = ship.lock_target {
+                *targeted_count.entry(target_id).or_default() += 1;
+            }
         }
+
+        for (ship, _) in &mut self.ships {
+            ship.fired_at = None;
+            ship.lock_target_pos = None;
+
+            // validate existing lock
+            if let Some(target_id) = ship.lock_target {
+                let target = enemies.iter().find(|enemy| enemy.id == target_id);
+
+                let valid = target.is_some_and(|target| {
+                    ship.pos.distance(target.pos) <= ship.config.aim_range
+                });
+
+                if !valid {
+                    *targeted_count.entry(target_id).or_default() =
+                        targeted_count.get(&target_id).unwrap_or(&1) - 1;
+                    ship.lock_target = None;
+                    ship.lock_progress = 0;
+                }
+            }
+
+            // progress existing lock or fire
+            if let Some(target_id) = ship.lock_target {
+                let target = enemies.iter().find(|enemy| enemy.id == target_id).unwrap();
+                ship.lock_target_pos = Some(target.pos);
+                ship.lock_progress += 1;
+
+                let lock_time = ship.config.fire_delay
+                    + (target.speed() / ship.config.max_speed
+                        * ship.config.fire_delay as f32) as u32;
+
+                if ship.lock_progress >= lock_time {
+                    ship.fired_at = Some(target.pos);
+                    hits.push(target_id);
+
+                    // reset lock after firing
+                    *targeted_count.entry(target_id).or_default() =
+                        targeted_count.get(&target_id).unwrap_or(&1) - 1;
+                    ship.lock_target = None;
+                    ship.lock_progress = 0;
+                }
+                continue;
+            }
+
+            // acquire new target: nearest enemy in range, not over-targeted
+            let best = enemies
+                .iter()
+                .filter(|enemy| {
+                    let dist = ship.pos.distance(enemy.pos);
+                    let count = targeted_count.get(&enemy.id).copied().unwrap_or(0);
+                    dist <= ship.config.aim_range && count < enemy.health
+                })
+                .min_by(|a, b| {
+                    let dist_a = ship.pos.distance_squared(a.pos);
+                    let dist_b = ship.pos.distance_squared(b.pos);
+                    dist_a.partial_cmp(&dist_b).unwrap()
+                });
+
+            if let Some(target) = best {
+                ship.lock_target = Some(target.id);
+                ship.lock_progress = 0;
+                ship.lock_target_pos = Some(target.pos);
+                *targeted_count.entry(target.id).or_default() += 1;
+            }
+        }
+
+        hits
     }
 
     pub fn movement(&mut self) {

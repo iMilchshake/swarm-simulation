@@ -25,6 +25,29 @@ pub fn draw_ship(ship: &Ship, color: Color) {
         vec2(pos.x + back_right.x, pos.y + back_right.y),
         color,
     );
+
+    // shot fired this tick: thick bright line
+    if let Some(target_pos) = ship.fired_at {
+        draw_line(
+            pos.x,
+            pos.y,
+            target_pos.x,
+            target_pos.y,
+            2.0,
+            color.with_alpha(1.0),
+        );
+    }
+    // lock-on in progress: thin faint line
+    else if let Some(target_pos) = ship.lock_target_pos {
+        draw_line(
+            pos.x,
+            pos.y,
+            target_pos.x,
+            target_pos.y,
+            1.,
+            color.with_alpha(0.33),
+        );
+    }
 }
 
 pub fn draw_swarm(swarm: &Swarm, color: Color) {

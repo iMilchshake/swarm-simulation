@@ -1,7 +1,20 @@
+use std::sync::atomic::{AtomicU64, Ordering};
+
 use glam::Vec2;
 use std::rc::Rc;
 
 const EPSILON: f32 = 0.001;
+
+static NEXT_SHIP_ID: AtomicU64 = AtomicU64::new(0);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct ShipId(pub u64);
+
+impl ShipId {
+    pub fn next() -> Self {
+        ShipId(NEXT_SHIP_ID.fetch_add(1, Ordering::Relaxed))
+    }
+}
 
 #[derive(Clone)]
 pub struct ShipConfig {
@@ -25,39 +38,54 @@ impl Default for ShipConfig {
             max_speed: 10.0,
             max_accel: 0.15,
             max_decel: 0.1,
-            aim_range: 50.0,
-            fire_delay: 10,
-            health: 2,
+            aim_range: 250.0,
+            fire_delay: 20,
+            health: 3,
         }
     }
 }
 
 /// A single unit. Controlled by a swarm, but works independent.
 pub struct Ship {
+    pub id: ShipId,
     pub pos: Vec2,
     pub vel: Vec2,
     pub target_pos: Vec2,
     pub health: u32,
-    config: Rc<ShipConfig>,
+    pub config: Rc<ShipConfig>,
+
+    /// current lock-on target
+    pub lock_target: Option<ShipId>,
+    /// ticks spent locking onto current target
+    pub lock_progress: u32,
+    /// set to target position on the tick a shot fires (for rendering)
+    pub fired_at: Option<Vec2>,
+    /// position of current lock target (for rendering lock-on line)
+    pub lock_target_pos: Option<Vec2>,
 }
 
 impl Ship {
     pub fn spawn(pos: Vec2, config: Rc<ShipConfig>) -> Ship {
         Ship {
+            id: ShipId::next(),
             pos,
             vel: Vec2::ZERO,
             target_pos: pos,
             health: config.health,
             config,
+            lock_target: None,
+            lock_progress: 0,
+            fired_at: None,
+            lock_target_pos: None,
         }
+    }
+
+    pub fn speed(&self) -> f32 {
+        self.vel.length()
     }
 
     pub fn set_target(&mut self, pos: Vec2) {
         self.target_pos = pos;
-    }
-
-    pub fn fight(&mut self) {
-        // todo!();
     }
 
     /// TODO: right now ships just accelerate in the direction of target,
