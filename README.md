@@ -1,5 +1,7 @@
 # Swarm Simulation
 
+Web version is available at [https://imilchshake.github.io/swarm-simulation/](https://imilchshake.github.io/swarm-simulation/).
+
 ## Motivation 
 - Idea: Roaming boids-like swarms of units that try to survive as long as possible
 - Scaling: These units can grow in size, but should also be punished for growing (e.g. lower movement speed)
