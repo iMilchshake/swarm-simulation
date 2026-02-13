@@ -3,12 +3,12 @@ use macroquad::prelude::*;
 
 use macroquad_viewplane_camera::ViewplaneCamera;
 
-use swarm_simulation::render::draw_swarm;
+use swarm_simulation::render::{draw_background_cover, draw_swarm};
 use swarm_simulation::simulation::{Bounds, Simulation, SimulationConfig};
 
 const NUM_SWARMS: usize = 25;
-const MAP_SCALE: f32 = 2.0;
-
+const MAP_WIDTH: f32 = 1980.;
+const MAP_HEIGHT: f32 = 1980.;
 const SIM_FRAME_TIME: f64 = 1. / 60.;
 
 fn window_conf() -> Conf {
@@ -44,13 +44,16 @@ fn random_pos(bounds: &Bounds) -> Vec2 {
 
 #[macroquad::main(window_conf)]
 async fn main() {
-    let map_width = screen_width() * MAP_SCALE;
-    let map_height = screen_height() * MAP_SCALE;
-    let bounds = Bounds::new(map_width, map_height);
-    let mut camera = ViewplaneCamera::new(map_width, map_height);
+    let bounds = Bounds::new(MAP_WIDTH, MAP_HEIGHT);
+    let mut camera = ViewplaneCamera::new(MAP_WIDTH, MAP_HEIGHT);
 
     let mut sim = Simulation::new(SimulationConfig::default(), bounds);
+
     let colors = generate_colors(NUM_SWARMS);
+
+    let background = load_texture("assets/backgrounds/space_background1.png")
+        .await
+        .unwrap();
 
     for _ in 0..NUM_SWARMS {
         let num_ships = rand::gen_range(2, 30);
@@ -71,6 +74,9 @@ async fn main() {
         }
 
         clear_background(WHITE);
+
+        draw_background_cover(&background, 16. / 9.);
+
         camera.apply();
 
         let bounds = sim.bounds();

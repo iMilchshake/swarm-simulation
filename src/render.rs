@@ -35,19 +35,19 @@ pub fn draw_swarm(swarm: &Swarm, color: Color) {
     draw_circle(
         swarm.target_pos.x,
         swarm.target_pos.y,
-        3.0,
-        color.with_alpha(0.5),
+        2.0,
+        color.with_alpha(0.50),
     );
 
     draw_circle_lines(
         swarm.center.x,
         swarm.center.y,
         swarm.config.vision_range,
-        0.5,
-        color.with_alpha(0.5),
+        1.0,
+        color.with_alpha(0.25),
     );
 
-    draw_circle(swarm.center.x, swarm.center.y, 8.0, color.with_alpha(1.0));
+    draw_circle(swarm.center.x, swarm.center.y, 4.0, color.with_alpha(0.25));
 
     draw_line(
         swarm.center.x,
@@ -55,6 +55,27 @@ pub fn draw_swarm(swarm: &Swarm, color: Color) {
         swarm.target_pos.x,
         swarm.target_pos.y,
         1.0,
-        color.with_alpha(0.5),
+        color.with_alpha(0.25),
+    );
+}
+
+pub fn draw_background_cover(texture: &Texture2D, aspect_ratio: f32) {
+    let screen_aspect = screen_width() / screen_height();
+
+    let (render_w, render_h) = if screen_aspect > aspect_ratio {
+        (screen_width(), screen_width() / aspect_ratio)
+    } else {
+        (screen_height() * aspect_ratio, screen_height())
+    };
+
+    draw_texture_ex(
+        texture,
+        0.0,
+        0.0,
+        WHITE,
+        DrawTextureParams {
+            dest_size: Some(vec2(render_w, render_h)),
+            ..Default::default()
+        },
     );
 }

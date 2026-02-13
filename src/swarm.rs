@@ -24,7 +24,7 @@ impl Default for SwarmConfig {
         SwarmConfig {
             max_ships: 30,
             scale: 10.0,
-            vision_range: 300.0,
+            vision_range: 500.0,
         }
     }
 }
@@ -64,10 +64,13 @@ impl Swarm {
         // spawn ships in spiral layout using golden angle (sunflower structure)
         for ship_idx in 0..num_ships {
             let n = ship_idx as f32;
-            let x = f32::sqrt(n) * f32::cos(n * GOLDEN_ANGLE) * swarm_config.scale;
-            let y = f32::sqrt(n) * f32::sin(n * GOLDEN_ANGLE) * swarm_config.scale;
-            let ship = Ship::spawn(Vec2::new(x, y), Rc::clone(&ship_config));
-            ships.push((ship, Vec2::new(x, y)));
+            let x_local = f32::sqrt(n) * f32::cos(n * GOLDEN_ANGLE) * swarm_config.scale;
+            let y_local = f32::sqrt(n) * f32::sin(n * GOLDEN_ANGLE) * swarm_config.scale;
+            let ship = Ship::spawn(
+                Vec2::new(pos.x + x_local, pos.y + y_local),
+                Rc::clone(&ship_config),
+            );
+            ships.push((ship, Vec2::new(x_local, y_local)));
         }
 
         Swarm {
@@ -152,32 +155,25 @@ impl Swarm {
         }
 
         if has_threat {
-            // Flee mode: use repulsion system
             let mut repulsion = RepulsionMap::new();
 
-            // Add enemy repulsors (all threats, not just nearest)
             for (enemy, dist) in &nearby_swarms {
                 if enemy.num_ships() >= self.num_ships() {
                     let angle = (enemy.center - self.center).to_angle();
-                    // Scale strength by ship count ratio and inverse distance
+                    // scale strength by ship count ratio and inverse distance TODO: is this good?
                     let ship_ratio = enemy.num_ships() as f32 / self.num_ships().max(1) as f32;
                     let dist_factor = 1.0 - (dist / self.config.vision_range).min(1.0);
                     let strength = ship_ratio * dist_factor;
                     repulsion.add_repulsor(angle, strength, ENEMY_SIGMA);
                 }
             }
-
-            // Add wall repulsion (normalized internally)
             repulsion.add_wall_repulsion(self.center, bounds, WALL_DETECT_RANGE, WALL_SIGMA);
-
-            // Add velocity penalty (penalize sharp turns)
             repulsion.add_velocity_penalty(
                 self.velocity,
                 VELOCITY_PENALTY_STRENGTH,
                 VELOCITY_SIGMA,
             );
 
-            // Get best escape angle
             let best_angle = repulsion.best_angle();
             let flee_dir = Vec2::from_angle(best_angle);
             let target =
