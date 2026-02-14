@@ -19,6 +19,9 @@ pub struct SwarmConfig {
 
     /// maximum vision range to see other swarms
     pub vision_range: f32,
+
+    /// minimum accel/decel multiplier at max swarm size (1.0 = no penalty, 0.4 = 40% accel at max_ships)
+    pub min_accel_factor: f32,
 }
 
 impl Default for SwarmConfig {
@@ -27,6 +30,7 @@ impl Default for SwarmConfig {
             max_ships: 30,
             scale: 10.0,
             vision_range: 500.0,
+            min_accel_factor: 0.5,
         }
     }
 }
@@ -185,8 +189,14 @@ impl Swarm {
     }
 
     pub fn movement(&mut self) {
+        let num_ships = self.ships.len() as f32;
+        let max_ships = self.config.max_ships as f32;
+        let occupancy_ratio = (num_ships - 1.0) / (max_ships - 1.0).max(1.0);
+        let accel_factor =
+            (1.0 - occupancy_ratio) + (self.config.min_accel_factor * occupancy_ratio);
+
         for (ship, _) in &mut self.ships {
-            ship.movement();
+            ship.movement(accel_factor);
         }
     }
 

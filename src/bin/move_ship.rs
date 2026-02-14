@@ -18,7 +18,7 @@ async fn main() {
         }
 
         // Update ship
-        ship.movement();
+        ship.movement(1.0);
 
         // Render
         clear_background(WHITE);

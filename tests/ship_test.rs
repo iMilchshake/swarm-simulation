@@ -13,7 +13,7 @@ fn test_ship_reaches_target(config: ShipConfig, target_pos: Vec2, start_velocity
 
     let mut last_dist = dist;
     for tick in 0..max_ticks {
-        ship.movement();
+        ship.movement(1.0);
 
         let dist_to_target = (ship.pos - ship.target_pos).length();
         eprintln!(

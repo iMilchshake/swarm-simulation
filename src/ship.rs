@@ -38,8 +38,8 @@ impl Default for ShipConfig {
     fn default() -> Self {
         ShipConfig {
             max_speed: 10.0,
-            max_accel: 0.15,
-            max_decel: 0.1,
+            max_accel: 0.30,
+            max_decel: 0.30,
             aim_range: 250.0,
             fire_delay: 60,
             lock_time_factor: 2.0,
@@ -97,10 +97,12 @@ impl Ship {
     /// destination optimally -> gotta investiage :)
     /// A smarter solution would allow to determine a smart acceleration
     /// vector that leads to the optimal / shortest path to the target
-    pub fn movement(&mut self) {
+    pub fn movement(&mut self, accel_factor: f32) {
         let to_target = self.target_pos - self.pos;
         let dist = to_target.length();
         let speed = self.vel.length();
+        let max_accel = self.config.max_accel * accel_factor;
+        let max_decel = self.config.max_decel * accel_factor;
 
         // close and slow enough -> full stop
         if dist < EPSILON && speed < EPSILON {
@@ -111,7 +113,7 @@ impl Ship {
 
         if dist < EPSILON {
             // at target but still moving -> brake
-            let brake = speed.min(self.config.max_decel);
+            let brake = speed.min(max_decel);
             self.vel = self.vel.normalize() * (speed - brake);
             self.pos += self.vel;
             return;
@@ -120,8 +122,7 @@ impl Ship {
         let dir_to_target = to_target / dist;
 
         // Max safe approach speed
-        let decel = self.config.max_decel;
-        let v_max = -decel + (decel * decel + 2.0 * decel * dist).sqrt();
+        let v_max = -max_decel + (max_decel * max_decel + 2.0 * max_decel * dist).sqrt();
         let v_max = v_max.min(self.config.max_speed);
 
         // Desired velocity: toward target at v_max speed
@@ -135,9 +136,9 @@ impl Ship {
             // Use max_accel for steering/speeding up, max_decel for slowing down
             let max_change = if self.vel.dot(delta) < 0.0 {
                 // delta is mostly opposing current velocity -> braking
-                self.config.max_decel
+                max_decel
             } else {
-                self.config.max_accel
+                max_accel
             };
 
             let accel = if delta_mag > max_change {
