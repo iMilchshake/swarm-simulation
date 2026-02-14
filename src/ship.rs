@@ -65,6 +65,8 @@ pub struct Ship {
     pub fired_at: Option<Vec2>,
     /// position of current lock target (for rendering lock-on line)
     pub lock_target_pos: Option<Vec2>,
+    /// total ticks needed to complete lock (for rendering progress)
+    pub lock_time: u32,
 }
 
 impl Ship {
@@ -80,6 +82,7 @@ impl Ship {
             lock_progress: 0,
             fired_at: None,
             lock_target_pos: None,
+            lock_time: 0,
         }
     }
 

@@ -33,19 +33,25 @@ pub fn draw_ship(ship: &Ship, color: Color) {
             pos.y,
             target_pos.x,
             target_pos.y,
-            2.0,
+            5.0,
             color.with_alpha(1.0),
         );
     }
-    // lock-on in progress: thin faint line
+    // lock-on in progress: alpha scales with lock progress
     else if let Some(target_pos) = ship.lock_target_pos {
+        let progress = if ship.lock_time > 0 {
+            ship.lock_progress as f32 / ship.lock_time as f32
+        } else {
+            0.0
+        };
+        let alpha = 0.1 + progress * 0.9;
         draw_line(
             pos.x,
             pos.y,
             target_pos.x,
             target_pos.y,
             1.,
-            color.with_alpha(0.33),
+            color.with_alpha(alpha),
         );
     }
 }

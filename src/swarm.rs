@@ -149,6 +149,7 @@ impl Swarm {
                 let speed_ratio = target.speed() / ship.config.max_speed;
                 let multiplier = 1.0 + speed_ratio * (ship.config.lock_time_factor - 1.0);
                 let lock_time = (ship.config.fire_delay as f32 * multiplier) as u32;
+                ship.lock_time = lock_time;
 
                 if ship.lock_progress >= lock_time {
                     ship.fired_at = Some(target.pos);
