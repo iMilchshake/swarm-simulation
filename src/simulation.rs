@@ -1,7 +1,7 @@
 use glam::Vec2;
 use std::rc::Rc;
 
-use crate::ship::{ShipConfig, ShipId};
+use crate::ship::{Ship, ShipConfig, ShipId};
 use crate::swarm::{Swarm, SwarmConfig, SwarmDecision};
 
 pub struct SimulationConfig {
@@ -158,18 +158,17 @@ impl Simulation {
             swarm.movement();
         }
 
-        // Phase 4: Combat — each swarm fights nearby enemy ships
+        // Phase 4: Combat, each swarm fights nearby enemy ships
         let mut all_hits: Vec<ShipId> = Vec::new();
 
         for swarm_idx in 0..self.swarms.len() {
             let (before, rest) = self.swarms.split_at_mut(swarm_idx);
             let (swarm, after) = rest.split_first_mut().unwrap();
 
-            let enemies: Vec<&crate::ship::Ship> = before.iter()
+            let enemies: Vec<&Ship> = before
+                .iter()
                 .chain(after.iter())
-                .filter(|other| {
-                    other.center.distance(swarm.center) <= swarm.config.vision_range
-                })
+                .filter(|other| other.center.distance(swarm.center) <= swarm.config.vision_range)
                 .flat_map(|s| s.ships.iter().map(|(ship, _)| ship))
                 .collect();
 
@@ -193,7 +192,7 @@ impl Simulation {
             swarm.finalize();
         }
 
-        // Phase 5: Cleanup dead swarms
+        // cleanup dead swarms
         self.swarms.retain(|s| !s.ships.is_empty());
     }
 }

@@ -28,6 +28,8 @@ pub struct ShipConfig {
     pub aim_range: f32,
     /// delay after a shot in ticks
     pub fire_delay: u32,
+    /// lock time multiplier on fire_delay, scaled by target speed (1.0 = no extra, 5.0 = up to 5x at max speed)
+    pub lock_time_factor: f32,
     /// initial ship health points (1 hit = 1 damage)
     pub health: u32,
 }
@@ -39,7 +41,8 @@ impl Default for ShipConfig {
             max_accel: 0.15,
             max_decel: 0.1,
             aim_range: 250.0,
-            fire_delay: 20,
+            fire_delay: 60,
+            lock_time_factor: 2.0,
             health: 3,
         }
     }

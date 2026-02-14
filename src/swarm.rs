@@ -125,9 +125,8 @@ impl Swarm {
             if let Some(target_id) = ship.lock_target {
                 let target = enemies.iter().find(|enemy| enemy.id == target_id);
 
-                let valid = target.is_some_and(|target| {
-                    ship.pos.distance(target.pos) <= ship.config.aim_range
-                });
+                let valid = target
+                    .is_some_and(|target| ship.pos.distance(target.pos) <= ship.config.aim_range);
 
                 if !valid {
                     *targeted_count.entry(target_id).or_default() =
@@ -143,9 +142,9 @@ impl Swarm {
                 ship.lock_target_pos = Some(target.pos);
                 ship.lock_progress += 1;
 
-                let lock_time = ship.config.fire_delay
-                    + (target.speed() / ship.config.max_speed
-                        * ship.config.fire_delay as f32) as u32;
+                let speed_ratio = target.speed() / ship.config.max_speed;
+                let multiplier = 1.0 + speed_ratio * (ship.config.lock_time_factor - 1.0);
+                let lock_time = (ship.config.fire_delay as f32 * multiplier) as u32;
 
                 if ship.lock_progress >= lock_time {
                     ship.fired_at = Some(target.pos);
